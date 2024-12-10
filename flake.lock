@@ -1,0 +1,41 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1733212471,
+        "narHash": "sha256-M1+uCoV5igihRfcUKrr1riygbe73/dzNnzPsmaLCmpo=",
+        "path": "/nix/store/vqhkmj60457j8nrw9vb94ln40rkic1p6-source",
+        "rev": "55d15ad12a74eb7d4646254e13638ad0c4128776",
+        "type": "path"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "type": "indirect"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "typed-systems": "typed-systems"
+      }
+    },
+    "typed-systems": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1701901890,
+        "narHash": "sha256-lCwEwvpGFICqSmGYDXyVOYsmVwm2wQ49LPRW1lweHsw=",
+        "owner": "YellowOnion",
+        "repo": "nix-typed-systems",
+        "rev": "fd51341655c082211c1292670ed9043cd580d716",
+        "type": "github"
+      },
+      "original": {
+        "owner": "YellowOnion",
+        "repo": "nix-typed-systems",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
