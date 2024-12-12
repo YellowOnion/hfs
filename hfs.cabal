@@ -43,11 +43,10 @@ extra-doc-files:    CHANGELOG.md
 -- Extra source files to be distributed with the package, such as examples, or a tutorial module.
 -- extra-source-files:
 
+tests: True
+
 common warnings
-    default-extensions: ImportQualifiedPost
-                    , RecordWildCards
-
-
+       ghc-options: -threaded -rtsopts -O2 -Wall
 
 common libs
        build-depends: base >= 4.9 && <5
@@ -59,6 +58,9 @@ common libs
                     , mmap
                     , vector
     default-language: GHC2021
+    default-extensions: ImportQualifiedPost
+                    , RecordWildCards
+
 
 
 executable hfs
@@ -71,7 +73,7 @@ executable hfs
     -- Modules included in this executable, other than Main.
     other-modules:
 
-    ghc-options: -threaded -rtsopts -O2 -Wall
+    ghc-options: -threaded -rtsopts -O2
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
 
@@ -85,4 +87,11 @@ executable hfs
 library
     import:  warnings, libs
     hs-source-dirs: ./src
---    exposed-modules:
+    exposed-modules: BTree
+
+test-suite tests
+    import: libs, warnings
+    type: exitcode-stdio-1.0
+    main-is: Tests.hs
+    build-depends: hfs, hspec, QuickCheck
+    hs-source-dirs: tests

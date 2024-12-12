@@ -1,117 +1,16 @@
 module Main where
 
+import GHC.Clock
 import Data.Vector qualified as Vector
 
 import Debug.Trace
-
-data Ref a = Ref a
-  deriving Show
-
-instance Show a => VRef Ref a where
-  get (Ref a) = a
-  put = Ref
+import Prelude hiding (length, lookup)
 
 
-class VRef a b where
-  get :: a b -> b
-  put :: b -> a b
+import BTree qualified
 
-
-type VNodes n ref k v = (Vector.Vector (k, n ref k v))
-type VLeafs ref k v = (Vector.Vector (k, ref v))
-
-data BNode ref k v = BNodes (ref (VNodes BNode ref k v))
-                   | BLeafs (ref (VLeafs ref k v))
-
-instance ( Show k
-         , Show v
-         , Show (Ref v)
-         )
-        => Show (BNode Ref k v) where
-  show (BNodes ref) = "Nodes: " ++ show ref
-  show (BLeafs ref) = "Leafs: " ++ show ref
-
-data BTree ref k v = BTree
-  { bFactor :: Int
-  , bRoot :: BNode ref k v
-  }
-
-instance (Show k, Show v) => Show (BTree Ref k v) where
-  show (BTree _ r ) = "BTree: " ++ show r
-
-lookup :: ( VRef ref v
-          , VRef ref (VNodes BNode ref k v) -- Interior nodes
-          , VRef ref (VLeafs ref k v) -- Leafs
-          , Ord k)
-       => k -> BTree ref k v -> Maybe v
-lookup k BTree{..} = go bRoot
-  where
-    go (BLeafs ref) =
-      case Vector.takeWhile ((<= k) . fst) leafs of
-        rest | Vector.null rest -> Nothing
-             | otherwise        -> Just . get . snd $ Vector.last rest
-
-      where
-        leafs = get ref
-    go (BNodes ref) =
-      case Vector.takeWhile ((<= k) . fst) nodes of
-        rest | Vector.null rest -> Nothing
-             | otherwise        -> go . snd $ Vector.last rest
-      where
-        nodes = get ref
-
-
-insert :: ( Ord k
-          , Show k
-          , VRef ref v
-          , VRef ref (VLeafs ref k v)
-          , VRef ref (VNodes BNode ref k v))
-       => k -> v -> BTree ref k v -> BTree ref k v
-insert k v BTree{..} = BTree bFactor $ go (0 :: Int) bRoot
-  where
-    singleton = Vector.singleton (k, put v)
-
-    go n (BLeafs ref)
-      | n > 512 = error $ "insert leaf too deep: " ++ show k
-      | Vector.null leafs = BLeafs $ put singleton
-      | Vector.length leafs >= bFactor * 2 = go (n+1) $
-        BNodes . put $ Vector.fromList
-        [ (lowerKey, BLeafs $ put lower), (upperKey, BLeafs $  put upper)]
-      | otherwise = BLeafs . put $ lower' Vector.++ singleton Vector.++ upper'
-      where
-        leafs = get ref
-        (lower, upper) = Vector.splitAt bFactor leafs
-        (lower', upper') = Vector.partition ((< k) . fst) leafs
-        lowerKey = fst $ Vector.head lower
-        upperKey = fst $ Vector.head upper
-
-    go n (BNodes ref)
-      | n > 10 = error $ "insert node too deep: " ++ show k
-      | Vector.null nodes && n > 0 = error "non-root node should not be empty"
-      | Vector.null nodes = BLeafs $ put singleton
-      | Vector.length nodes >= bFactor * 2 = go (n+1) $
-        BNodes . put $ Vector.fromList
-          [(lowerKey, BNodes $ put lower), (upperKey, BNodes $ put upper)]
-      | otherwise = BNodes . put $ lower'' Vector.++ upper'
-      where
-        -- TODO figure out < or <=
-        nodes = get ref
-        (lower, upper) = Vector.splitAt bFactor nodes
-        (lower', upper') = Vector.partition ((< k) . fst) nodes
-        lower'' = case Vector.unsnoc lower' of
-          Just (vs, i) -> vs `Vector.snoc` (max (fst i) k, go (n+1) $ snd i )
-          Nothing -> Vector.singleton (k, BLeafs $ put singleton)
-
-        lowerKey = fst $ Vector.head lower
-        upperKey = fst $ Vector.head upper
-
-empty :: ( VRef ref v
-         , VRef ref (VLeafs ref k v)
-         ) => BTree ref k v
-empty = BTree 4 (BLeafs . put $ Vector.empty)
-
-tree :: BTree Ref Int String
-tree = empty
+tree :: BTree.BTree BTree.Ref Int String
+tree = BTree.empty
 
 badHash :: Int -> Int
 badHash n = (p * (n ^ 2 + 1)) `mod` 2^8
@@ -121,11 +20,28 @@ badHash n = (p * (n ^ 2 + 1)) `mod` 2^8
 testIO :: [Int] -> IO ()
 testIO ls = do
   print ls
-  print $ foldr (\k -> insert k "" . traceShowId) tree ls
+  print $ foldr (\k -> BTree.insert k "" . traceShowId) tree ls
 
 main :: IO ()
 main = do
   mapM_ testIO [map badHash [2^8..2^8+10]
                , [0..10]
                , [10,9..0]
+               , [0..300]
                ]
+  putStrLn "BIG"
+  t1 <- getMonotonicTime
+  let tr = foldr ((`BTree.insert` "") . badHash) tree [0..2^20]
+  t2 <- tr `seq` getMonotonicTime
+  print $ round $ (t2 - t1) * 1000
+  let c = BTree.fold (\i _ -> i + 1) 0 tr
+  t3 <- c `seq` getMonotonicTime
+  putStrLn $ "items in btree: " ++ show c
+  print $ round $ (t3 - t2) * 1000
+  t4 <- getMonotonicTime
+  case BTree.lookup (2^14) tr of
+    Nothing -> putStrLn "Can't find item!"
+    Just item -> do
+      t5 <- item `seq` getMonotonicTime
+      putStrLn $ "depth: " ++ show (fst item)
+      print $ round $ (t5 - t4) * 1000

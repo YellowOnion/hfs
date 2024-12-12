@@ -40,8 +40,12 @@
           withHoogle = true;
           packages = p: [ self.packages.${system}.default ];
           buildInputs = builtins.attrValues {
-            inherit (pkgs) cabal-install cabal2nix renderdoc;
-            inherit (haskellPkgs) ghc haskell-language-server lambdabot hlint;
+            inherit (pkgs) cabal-install cabal2nix;
+            inherit (haskellPkgs) ghc
+              haskell-language-server
+              lambdabot
+              hlint
+              eventlog2html;
           };
         };});
 
