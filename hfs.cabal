@@ -87,7 +87,7 @@ executable hfs
 library
     import:  warnings, libs
     hs-source-dirs: ./src
-    exposed-modules: BTree
+    exposed-modules: BTree, Types.KvVector, Types.VNode
 
 test-suite tests
     import: libs, warnings

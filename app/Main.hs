@@ -8,7 +8,7 @@ import Prelude hiding (length, lookup)
 
 
 import BTree qualified
-
+{-
 tree :: BTree.BTree BTree.Ref Int String
 tree = BTree.empty
 
@@ -45,3 +45,4 @@ main = do
       t5 <- item `seq` getMonotonicTime
       putStrLn $ "depth: " ++ show (fst item)
       print $ round $ (t5 - t4) * 1000
+-}
