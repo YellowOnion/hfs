@@ -8,29 +8,34 @@ import Test.QuickCheck
 import Control.Exception (evaluate)
 
 
-import BTree qualified
+import qualified List
+import qualified Types.KvVector as KVec
 
-
-type Tree = BTree.BTree IO KvVector Int String
-
-
+{-
 fromList :: [Int] -> Tree
 fromList ls = foldl f tree ls
   where
     f :: Tree -> Int -> Tree
     f b k = BTree.insert k "" b
+-}
+
+type LList = List.List KVec.KvVector Int String
 
 range = 1024
 ascendingLs  = [0      ..  range-1] :: [Int]
 descendingLs = [range-1,range-2..0] :: [Int]
 
 main = hspec $ do
-  let
+  describe "List basics" $ do
+    it "nope" $ do
+      a <- List.new
+      return ()
 
+{-
   describe "BTree basics" $ do
 
     it "make empty Btree" $ do
-      return ()
+      return () -- BTree.new `shouldReturn` (BTree.BTree 32 0)
       -- Btree.empty :: IO Tree
 
     it "check inserts / lookup" $ do
@@ -46,3 +51,4 @@ main = hspec $ do
     it "descending order inserts" $ do
       return ()
       -- (BTree.toList $ fromList descendingLs) `shouldBe` map (,"") ascendingLs
+-}

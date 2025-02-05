@@ -57,6 +57,7 @@ common libs
                     , flat
                     , mmap
                     , vector
+                    , lens
     default-language: GHC2021
     default-extensions: ImportQualifiedPost
                     , RecordWildCards
@@ -87,7 +88,16 @@ executable hfs
 library
     import:  warnings, libs
     hs-source-dirs: ./src
-    exposed-modules: BTree, Types.KvVector, Types.VNode
+    exposed-modules:
+      Backend.VectorSTM
+      , BTree
+--      List
+--    , Types.SortedLog
+--    , Types.KvVector
+--    , Types.VNode
+      , Types.VItem
+      , Types.Bucket
+      , Types.Super
 
 test-suite tests
     import: libs, warnings

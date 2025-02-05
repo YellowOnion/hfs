@@ -6,11 +6,10 @@ import Data.Vector qualified as Vector
 import Debug.Trace
 import Prelude hiding (length, lookup)
 
+import Control.Concurrent.STM
+import Control.Monad (foldM)
 
 import BTree qualified
-{-
-tree :: BTree.BTree BTree.Ref Int String
-tree = BTree.empty
 
 badHash :: Int -> Int
 badHash n = (p * (n ^ 2 + 1)) `mod` 2^8
@@ -20,17 +19,24 @@ badHash n = (p * (n ^ 2 + 1)) `mod` 2^8
 testIO :: [Int] -> IO ()
 testIO ls = do
   print ls
-  print $ foldr (\k -> BTree.insert k "" . traceShowId) tree ls
+  tree :: BTree.BTree STM Int String <- atomically $ BTree.new
+  tree <- atomically $ foldM (\t k -> BTree.insert k "" t) tree ls
+  m <- atomically $ BTree.foldn (\n m kv -> m >> print (n, kv)) (return ()) tree
+  m
 
 main :: IO ()
 main = do
   mapM_ testIO [map badHash [2^8..2^8+10]
                , [0..10]
                , [10,9..0]
+               , [0..36]
                , [0..300]
                ]
+
+{-
   putStrLn "BIG"
   t1 <- getMonotonicTime
+
   let tr = foldr ((`BTree.insert` "") . badHash) tree [0..2^20]
   t2 <- tr `seq` getMonotonicTime
   print $ round $ (t2 - t1) * 1000

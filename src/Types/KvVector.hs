@@ -1,5 +1,7 @@
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
 -- |
 
 module Types.KvVector where
@@ -13,74 +15,87 @@ import Data.Vector qualified as Vec
 import Types.VNode
 import Data.List (sortOn)
 
-data KvVector k v = forall iv . KvVector
+data KvVector k v = KvVector
   { kvVecMax :: Int
-  , kvVecNodeCount :: TVar Int
-  , kvVecLeafCount :: TVar Int
-  , kvVecNodeList  :: TVar (Vec.Vector (k, iv))
-  , kvVecLeafList  :: TVar (Vec.Vector (k, v))
+  , kvVecNodeList  :: TVar (Vec.Vector (VItem k v))
   }
 
+type instance KeyType (KvVector k v) = k
+type instance ValueType (KvVector k v) = v
 
-instance Ord k => VNode KvVector IO k v
-  where
-    create s = KvVector s
-               <$> newTVarIO 0
-               <*> newTVarIO 0
-               <*> newTVarIO Vec.empty
-               <*> newTVarIO Vec.empty
+instance RunVNode IO (KvVector) where
+  runVNode = runKvVector
 
-    delete _ = return ()
+runKvVector :: (KeyType t ~ k) => VNode t (KvVector k v) k a -> IO a
+runKvVector a = case a of
+  Create -> KvVector 32
+               <$> newTVarIO Vec.empty
 
-    appendNode k v KvVector{..} = atomically $ do
-      modifyTVar kvVecNodeList $ flip Vec.snoc (k, v)
-      modifyTVar' kvVecNodeCount (+1)
-      cnt <- readTVar kvVecNodeCount
-      return $ cnt >= (kvVecMax `div` 2)
+  (Delete _) -> return ()
 
-    appendLeaf k v KvVector{..} = atomically $ do
-      modifyTVar kvVecLeafList $ flip Vec.snoc (k, v)
-      modifyTVar' kvVecLeafCount (+1)
-      cnt <- readTVar kvVecLeafCount
-      return $ cnt >= (kvVecMax `div` 2)
+  (Size (KvVector s _)) -> return s
 
-    destroyNode = error "destroy nodes not implemented"
-    destroyLeaf = error "destroy leafs not implemented"
+  (Length KvVector{..}) -> atomically $ do
+    vec <- readTVar kvVecNodeList
+    return $ Vec.length vec
 
-    split KvVector{..} = atomically $ do
-      vecNodes <- readTVar kvVecNodeList
-      vecLeafs <- readTVar kvVecLeafList
-      let (ln, un) = split' vecNodes
-          (lf, uf) = split' vecLeafs
-      lower <- new' ln lf
-      upper <- new' un uf
-      return (lower, upper)
-      where
-        new' n l = KvVector kvVecMax <$> newTVar (Vec.length n)
-                                     <*> newTVar (Vec.length l)
-                                     <*> newTVar n
-                                     <*> newTVar l
-        split' = Vec.splitAt (kvVecMax `div` 4)
+  (Append k v KvVector{..}) -> atomically $ do
+    modifyTVar kvVecNodeList $ flip Vec.snoc (VItem k v)
+    vec <- readTVar kvVecNodeList
+    return $ (Vec.length vec) >= kvVecMax
+
+  (Remove k KvVector{..}) -> atomically $ do
+    modifyTVar kvVecNodeList $ flip Vec.snoc (VItemDel k)
+    return ()
+
+
+  (Fold f init KvVector{..}) -> atomically $ do
+    vec <- readTVar kvVecNodeList
+    return $ Vec.foldl' f init vec
+{-
+
+  (Split KvVector{..}) -> atomically $ let
+
+    new' :: Internal i
+                  -> External i -> STM (KvVector i)
+    new' n l = KvVector kvVecMax <$> newTVar (Vec.length n)
+                                 <*> newTVar (Vec.length l)
+                                 <*> newTVar n
+                                 <*> newTVar l
+
+    split' = Vec.splitAt (kvVecMax `div` 4)
                  . Vec.fromList
                  . sortOn fst
                  . Vec.toList
 
-    flushLeafs KvVector{..} = atomically $ do
-      writeTVar kvVecLeafCount 0
-      vec <- swapTVar kvVecLeafList Vec.empty
-      return . sortOn fst $ Vec.toList vec
+    split'' = Vec.splitAt (kvVecMax `div` 4)
+                 . Vec.fromList
+                 . sortOn fst
+                 . Vec.toList
+    in do
+    vecNodes <- readTVar kvVecNodeList
+    vecLeafs :: (Ord (KeyType t) => External t) <- readTVar kvVecLeafList
+    let (ln :: Internal t, un :: Internal t) = split' vecNodes
+        (lf :: External t, uf :: External t) = split'' vecLeafs
+    lower <- new' ln lf
+    upper <- new' un uf
+    return (lower, upper)
 
-    fuse        = error "fuse not implemented"
+  (FlushLeafs KvVector{..}) -> atomically $ do
+    writeTVar kvVecLeafCount 0
+    vec <- swapTVar kvVecLeafList Vec.empty
+    return . sortOn fst $ Vec.toList vec
 
-    size (KvVector s _ _ _ _) = return s
+  (Size (KvVector s _ _ _ _)) -> return s
 
-    findNode k KvVector{..} = atomically $ do
-      vn <- readTVar kvVecNodeList
-      return $ Vec.find ((< k) . fst) vn
+  (FindNode k KvVector{..}) -> atomically $ do
+    vn <- readTVar kvVecNodeList
+    return $ Vec.find ((< k) . fst) vn
 
-    findLeaf k KvVector{..} = atomically $ do
+  (FindLeaf k KvVector{..}) -> atomically $ do
       vl <- readTVar kvVecLeafList
       let ls = Vec.foldr' (\a -> if fst a == k then (a:) else id) [] vl
       return $ case ls of
         [] -> Nothing
         (a:_) -> Just a
+-}
