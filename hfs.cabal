@@ -55,9 +55,11 @@ common libs
                     , filepath
                     , stm
                     , flat
+                    , binary
                     , mmap
                     , vector
                     , lens
+                    , containers
     default-language: GHC2021
     default-extensions: ImportQualifiedPost
                     , RecordWildCards
@@ -89,15 +91,26 @@ library
     import:  warnings, libs
     hs-source-dirs: ./src
     exposed-modules:
-      Backend.VectorSTM
-      , BTree
+--Backend.VectorSTM
+--      , BTree
+       Util
+       , Instances
 --      List
 --    , Types.SortedLog
 --    , Types.KvVector
 --    , Types.VNode
-      , Types.VItem
+--      , Types.VItem
+--      , Types.Fun
+      , Types.BTree
+      , Types.Ref
+      , Types.Refable
       , Types.Bucket
+      , Types.Dev
+      , Types.Extent
+      , Types.Store
       , Types.Super
+      , Backend.Bucket
+      , Backend.Super
 
 test-suite tests
     import: libs, warnings

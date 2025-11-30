@@ -9,30 +9,22 @@ import Prelude hiding (length, lookup)
 import Control.Concurrent.STM
 import Control.Monad (foldM)
 
-import BTree qualified
+import Backend.Bucket
 
 badHash :: Int -> Int
 badHash n = (p * (n ^ 2 + 1)) `mod` 2^8
   where
     p = 2^255 - 19
 
-testIO :: [Int] -> IO ()
-testIO ls = do
-  print ls
-  tree :: BTree.BTree STM Int String <- atomically $ BTree.new
-  tree <- atomically $ foldM (\t k -> BTree.insert k "" t) tree ls
-  m <- atomically $ BTree.foldn (\n m kv -> m >> print (n, kv)) (return ()) tree
-  m
-
 main :: IO ()
 main = do
-  mapM_ testIO [map badHash [2^8..2^8+10]
-               , [0..10]
-               , [10,9..0]
-               , [0..36]
-               , [0..300]
-               ]
-
+  putStrLn "formatting..."
+  _h <- formatStore "./data/store"
+  putStrLn "done."
+  putStrLn "opening..."
+  store <- openStore2 _h
+  putStrLn "done."
+  printStore store
 {-
   putStrLn "BIG"
   t1 <- getMonotonicTime

@@ -5,24 +5,43 @@
 module Types.Super where
 
 import Flat
+import Data.Binary qualified as Binary
 
 import Data.Word
+import Data.Char (ord)
+import Data.Bits
+import Control.Concurrent.STM
+import Data.Map.Strict qualified as Map
 
-import Types.Bucket as Bucket
+import Types.Bucket qualified as Bucket
+import Types.Extent qualified as Extent
+import Types.BTree qualified as BTree
+import Types.Ref
 
 data MAGIC = MAGIC
-  {-# UNPACK #-} !Word64
-  {-# UNPACK #-} !Word64
-  deriving (Eq, Show, Generic, Flat)
+  !Word64
+  !Word64
+  deriving (Eq, Show, Generic, Binary.Binary)
 
-mAGIC = MAGIC 0x4861736B656C6C46 0x53
+mAGIC :: MAGIC
+mAGIC = MAGIC (stringToWord64 "hsFSFTWW") (stringToWord64 "00000001")
+
+stringToWord64 :: String -> Word64
+stringToWord64 = fromIntegral . sum . zipWith (\o c -> ord c `shiftL` o) [0,8..] . reverse
 
 data Super = Super
-  { magic :: {-# UNPACK #-} !MAGIC
-  , version :: {-# UNPACK #-} !Word64
-  , journalLoc :: {-# UNPACK #-} !Bucket.BucketIdx
-  , journalSeq :: {-# UNPACK #-} !Word64
-  , superSeq   :: {-# UNPACK #-} !Word64
-  , bucketCount :: {-# UNPACK #-} !Word64
-  , rootBucket :: {-# UNPACK #-} !Bucket.BucketIdx
-  } deriving (Eq, Show, Generic, Flat)
+  { magic      :: !MAGIC
+  , version    :: !Word64
+  , journalSeq :: !Word64
+  , journalBuckets :: ![Ref Bucket.Id]
+  , superSeq   :: !Word64
+  , inodeCount :: !Word64
+  --, mapInfo :: ![Ref BTree.Map]
+  } deriving (Eq, Show, Generic)
+
+data SuperCtl = SuperWrite | SuperExit deriving (Eq, Show)
+
+data SuperManager = SuperManager
+  { _super :: TMVar Super
+  , _ctl :: TMVar SuperCtl
+  }
