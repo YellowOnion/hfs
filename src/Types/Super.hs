@@ -21,7 +21,7 @@ import Types.Ref
 data MAGIC = MAGIC
   !Word64
   !Word64
-  deriving (Eq, Show, Generic, Binary.Binary)
+  deriving (Eq, Show, Generic, Flat, Binary.Binary)
 
 mAGIC :: MAGIC
 mAGIC = MAGIC (stringToWord64 "hsFSFTWW") (stringToWord64 "00000001")
@@ -33,11 +33,11 @@ data Super = Super
   { magic      :: !MAGIC
   , version    :: !Word64
   , journalSeq :: !Word64
-  , journalBuckets :: ![Ref Bucket.Id]
+  , journalBuckets :: ![Bucket.Id]
   , superSeq   :: !Word64
   , inodeCount :: !Word64
   --, mapInfo :: ![Ref BTree.Map]
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Binary.Binary)
 
 data SuperCtl = SuperWrite | SuperExit deriving (Eq, Show)
 

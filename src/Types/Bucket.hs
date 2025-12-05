@@ -17,6 +17,7 @@ import Control.Concurrent.STM
 
 import Types.Dev
 
+
 bUCKET_SIZE :: Int64
 bUCKET_SIZE = 2 ^ (18 :: Int) -- 256kB hard coded for now
 
@@ -29,7 +30,7 @@ data BucketType = Free
 data Id = Id
   { dev :: !Dev
   , offset :: !Word32 -- amount of bUCKET_SIZE from start of dev
-  } deriving (Eq, Ord, Show, Generic, Binary)
+  } deriving (Eq, Ord, Show, Generic, Flat, Binary)
 
 data AllocInfo = AllocInfo
   { _dirtyBytes :: !Word32 -- do I need anything else???

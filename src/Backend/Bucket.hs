@@ -7,24 +7,22 @@ import Data.ByteString.Lazy as LBS
 
 import Data.Binary
 
-import Data.Map.Strict qualified as Map
 import Control.Concurrent.STM
 
 import Types.Bucket hiding (Id(..))
 import Types.Bucket qualified as Bucket
 import Types.Super qualified as Super
+import Backend.BTree qualified as BTree
 import Types.Store
-import Types.Ref
-import Types.BTree qualified as BTree
 
 import Backend.Super (openSuper)
-import Types.Super (Super(allocInfo))
-import qualified Types.Bucket as Bucket
-import qualified Types.Bucket as Bucket
 
+{-
 bucketIdToRef (Bucket.Id dev offset) = RefRaw dev (Bucket.bUCKET_SIZE * offset) Bucket.bUCKET_SIZE
 
-seekToRef handle (RawRef _ offset _) = hSeek handle AbsoluteSeek offset
+seekToBucket handle (RefRaw _ offset _) = hSeek handle AbsoluteSeek offset
+
+-}
 
 _openFile :: FilePath -> IO Handle
 _openFile p = do
@@ -39,14 +37,11 @@ formatStore p = do
     { Super.magic = Super.mAGIC
     , Super.version = 1
     , Super.journalSeq = 0
+    , Super.journalBuckets = defaultJournalBuckets
     , Super.superSeq = 0
-    , mapInfo = [ (bucketIdToRef 0 1)
-                , (bucketIdToRef 0 2)]
+    , Super.inodeCount = 0
     }
-  seekToRef (bucketIdToRef 0 1)
-  LBS.hPut handle . encode $ defaultAlloc
-  seekToRef (bucketIdToRef 0 2)
-  LBS.hPut handle . encode $ Map.empty
+  -- TODO alloc journal buckets
   hFlush handle
   return handle
 
@@ -58,20 +53,18 @@ openStore2 :: Handle -> IO Store
 openStore2 _handle = do
   handle <- newTMVarIO _handle
   sbm <- openSuper handle
-  (_alloc, _inodeCount, _extents) <- atomically $ do
+  (_inodeCount, sb) <- atomically $ do
     sb@Super.Super{..} <- takeTMVar $ Super._super sbm
-    a <- newTMVar allocInfo
     i <- newTMVar inodeCount
-    e <- newTMVar extentInfo
     putTMVar (Super._super sbm) sb
-    return (a, i, e)
-  return $ Store handle sbm _alloc _inodeCount _extents
+    return (i, sb)
+  btm <- BTree.open sb
+  return $ Store handle sbm _inodeCount btm
 
 
-defaultAlloc = Map.insert (Bucket.Id 0 0) (Alloc AllocSuper 0)
-             . Map.insert (Bucket.Id 0 1) (Alloc (AllocBtree 0) 0) -- Alloc Btree
-             . Map.insert (Bucket.Id 0 3) (Alloc (AllocBtree 0) 0) -- Extent Btree
-             $ Map.empty
+defaultJournalBuckets :: [Bucket.Id]
+defaultJournalBuckets = [ Bucket.Id 0 1
+                        ]
 
 -- this allocates a new bucket for writes
 {-

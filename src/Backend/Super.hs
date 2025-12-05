@@ -44,6 +44,9 @@ openSuper _handle = do
 
   sbm <- atomically $ SuperManager <$> newTMVar sb <*> newEmptyTMVar
   _ <- forkIO $ superWriter _handle sbm
+
+  traceIO $ "trace: " ++ (show sb)
+
   return sbm
 
 closeSuper :: SuperManager -> IO ()

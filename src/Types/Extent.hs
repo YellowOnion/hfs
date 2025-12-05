@@ -10,8 +10,10 @@ import GHC.Generics
 
 import Types.Dev
 
-data Csum = Crc32 | CSumNil deriving (Eq, Show, Generic, Binary)
-data Comp = CompNil deriving (Eq, Show, Generic, Binary)
+import Flat
+
+data Csum = Crc32 | CSumNil deriving (Eq, Show, Generic, Flat, Binary)
+data Comp = CompNil deriving (Eq, Show, Generic, Flat, Binary)
 
 data Ptr = Ptr
   { dev :: Dev
@@ -20,10 +22,10 @@ data Ptr = Ptr
   , comp :: Maybe Comp
   , next :: Ptr
   } | Nil
-  deriving (Eq, Show, Generic, Binary)
+  deriving (Eq, Show, Generic, Flat, Binary)
 
 data Id = Id
   { inode :: Word64
   , inodeOffset :: Word64
-  , snapshot :: Word32
-  } deriving (Eq, Ord, Show, Generic, Binary)
+  --, snapshot :: Word32
+  } deriving (Eq, Ord, Show, Generic, Flat, Binary)

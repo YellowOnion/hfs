@@ -22,7 +22,15 @@ import Control.Monad (guard)
 type Length = Word64
 type Offset = Word32
 
+class Refable a where
+  makeRefIO :: a -> IO (Ref a)
+  makeRef   :: a -> Ref a
+  deRef :: (Ref a) -> a
+
 data Ref a = RefInline BS.ByteString
            | RefRaw Dev Offset Length     -- data stored directly
-           | ExtentRef Extent.Id  -- data stored indirectly via the extent system
-           deriving (Eq, Show)
+--           | ExtentRef Extent.Id  -- data stored indirectly via the extent system
+           deriving (Eq, Show, Generic, Flat)
+
+--instance (Refable a, Generic a) => Flat (Ref a) where
+--  makeRef a = Ref $

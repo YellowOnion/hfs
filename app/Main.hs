@@ -24,7 +24,7 @@ main = do
   putStrLn "opening..."
   store <- openStore2 _h
   putStrLn "done."
-  printStore store
+  --printStore store
 {-
   putStrLn "BIG"
   t1 <- getMonotonicTime

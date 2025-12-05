@@ -11,6 +11,7 @@ import Data.Word
 import Types.Super qualified as Super
 import Types.Bucket qualified as Bucket
 import Types.Extent qualified as Extent
+import Types.BTree qualified as BTree
 
 data Store = Store
   { _handle :: TMVar Handle

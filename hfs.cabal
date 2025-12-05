@@ -103,14 +103,15 @@ library
 --      , Types.Fun
       , Types.BTree
       , Types.Ref
-      , Types.Refable
       , Types.Bucket
       , Types.Dev
       , Types.Extent
       , Types.Store
       , Types.Super
+      , Types.Journal
       , Backend.Bucket
       , Backend.Super
+      , Backend.BTree
 
 test-suite tests
     import: libs, warnings
